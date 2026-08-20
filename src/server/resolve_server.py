@@ -421,6 +421,16 @@ class Handler(BaseHTTPRequestHandler):
 
             if path == "/api/resolve":
                 self._handle_api(query)
+            elif path == "/api/debug":
+                # 配置自检（与 Worker 版一致）：确认代理/Cookie 配置是否生效
+                self._send_json({
+                    "code": 0,
+                    "message": "ok",
+                    "proxy_enabled": PROXY_ENABLED,
+                    "has_bili_cookie": bool(BILI_COOKIE or SESSDATA),
+                    "has_http_proxy": bool(BILI_HTTP_PROXY),
+                    "perm_domain": PERM_DOMAIN,
+                })
             elif path == "/proxy":
                 self._handle_proxy(query)
             elif path == "/pic":
