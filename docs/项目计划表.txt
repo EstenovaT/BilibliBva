@@ -100,6 +100,19 @@ biliblivBva/
        连接本 GitHub 仓库，构建命令：
          cd src/worker && pnpm install && pnpm deploy
        push 后自动构建部署
+   5. GitHub 自动部署（方式二：GitHub Actions，推荐，仓库已内置）：
+       .github/workflows/deploy.yml 已就绪，push 到 main/master 自动执行：
+         pnpm install --frozen-lockfile → wrangler deploy
+       仅需一次性配置：
+         a) Cloudflare → My Profile → API Tokens → Create Token
+            → 选 "Edit Cloudflare Workers" 模板，复制 Token
+         b) GitHub 仓库 → Settings → Secrets and variables → Actions
+            → New repository secret：名称 CLOUDFLARE_API_TOKEN，值粘贴 Token
+       之后每次 git push 即自动更新线上 Worker
+
+【自动更新工作流约定】
+  改动代码 → git commit（本地） → git push → GitHub Actions 自动部署
+  → Cloudflare 线上立即生效；可在仓库 Actions 页查看部署日志
 
 【环境变量（wrangler.toml [vars]）】
   PROXY = "0"     # 1 时开启 /proxy 代理播放（默认关闭，省流量）
