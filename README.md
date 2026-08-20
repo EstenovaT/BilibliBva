@@ -151,13 +151,12 @@ curl "http://localhost:8787/api/resolve?url=BV1xx411c7mD&p=1&qn=80"
   网页提供「复制直链」（配合 IDM/迅雷等工具下载）与「代理播放」两种方式；
   代理播放由后端转发流量，公开站点注意流量成本。
 - **B 站风控（-412）**：B 站对异常 IP/频率有风控，解析接口可能偶发
-  `-412`，稍后重试或更换网络即可；Cloudflare 出口 IP 触发概率相对更高。
-  Worker 已内置 **buvid3 cookie 预热**（先访问 www.bilibili.com 再调 API）
-  降低风控概率。若线上仍提示 `-412`，两个解法任选：
-  - **快速**：给 Worker 配置 `SESSDATA` Secret（你的 B 站登录 Cookie），
-    登录态请求可绕过 -412，配置方法见 `wrangler.toml` 注释；
-  - **稳定**：改用 Cloudflare Tunnel + 本地 Python 后端（请求从国内 IP
-    出站，基本不受风控影响），完整步骤见 `docs/Cloudflare-Tunnel部署方案.txt`。
+  `-412`。**实测结论**：Cloudflare Worker 出口 IP 段被 B 站整体风控，
+  配置 BILI_COOKIE 完整会话 Cookie 后**仍被拦截**——该限制在 Worker
+  侧无法绕过（Worker 无法选择出口 IP；Cloudflare 中国网络仅企业版
+  且需 ICP 备案）。**最终方案**：让请求从国内 IP 出站，即
+  Cloudflare Tunnel + 本地 Python 后端，步骤见
+  `docs/Cloudflare-Tunnel部署方案.txt`（一键文件在 `deploy/tunnel/`）。
 - **代理播放为隐藏功能**：在线版默认页面只提供「直接播放」与复制直链；
   在域名后加 `/ex`（如 `https://bva.estenova.top/ex`）打开完全版网页，
   即可使用「代理播放」。
