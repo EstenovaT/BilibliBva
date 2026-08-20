@@ -100,6 +100,9 @@ function picContentType(urlStr) {
 
 // ─── B 站 API ─────────────────────────────────────────────
 
+// 当前请求的 env（在 fetch 入口赋值；含 SESSDATA 等配置）
+let _env = null;
+
 // 最近一次 API 请求的失败原因（供错误提示；多请求下可能互相覆盖，仅作提示）
 let _lastApiError = "";
 
@@ -134,10 +137,20 @@ async function ensureBuvid3() {
   return _buvid3;
 }
 
+// 组装请求 Cookie：buvid3（自动预热）+ SESSDATA（可选，登录态可绕过 -412）
+function buildBiliCookie() {
+  const parts = [];
+  if (_buvid3) parts.push(_buvid3);
+  const sess = _env && _env.SESSDATA;
+  if (sess) parts.push("SESSDATA=" + sess);
+  return parts.join("; ");
+}
+
 async function biliGet(urlStr) {
   const buvid = await ensureBuvid3();
   const headers = { ...HEADERS };
-  if (buvid) headers["Cookie"] = buvid;
+  const cookie = buildBiliCookie();
+  if (cookie) headers["Cookie"] = cookie;
   let resp;
   try {
     resp = await fetch(urlStr, { headers });
@@ -159,7 +172,10 @@ async function biliGet(urlStr) {
   }
   if (data) {
     const code = data.code;
-    if (code === -412) _lastApiError = "B站风控拦截(-412)：当前出口 IP 被 B 站限制";
+    if (code === -412) {
+      _lastApiError = "B站风控拦截(-412)：当前出口 IP 被 B 站限制" +
+        (_env && !_env.SESSDATA ? "（可配置 SESSDATA 登录 Cookie 绕过）" : "");
+    }
     else if (code === -404) _lastApiError = "视频不存在或已被删除(-404)";
     else if (code === -403) _lastApiError = "访问被拒绝(-403)：可能需要登录或该视频不可见";
     else _lastApiError = `B站API错误(code=${code} msg=${data.message || ""})`;
@@ -335,9 +351,10 @@ async function handlePic(request, q) {
     return json({ code: 400, message: "封面地址不合法" }, 400);
   }
   try {
-    const buvid = await ensureBuvid3();
+    await ensureBuvid3();
+    const cookie = buildBiliCookie();
     const headers = { ...HEADERS };
-    if (buvid) headers["Cookie"] = buvid;
+    if (cookie) headers["Cookie"] = cookie;
     const upstream = await fetch(urlStr, { headers });
     if (!upstream.ok) return json({ code: -1, message: "封面获取失败" }, 502);
     const body = await upstream.arrayBuffer();
@@ -383,6 +400,7 @@ async function handleProxy(request, q, env) {
 
 export default {
   async fetch(request, env) {
+    _env = env;
     const url = new URL(request.url);
     const path = url.pathname;
     const q = url.searchParams;

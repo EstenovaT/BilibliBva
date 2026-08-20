@@ -20,3 +20,12 @@ PROXY = "0"
 
 # 部署到正式域名（绑定自定义域 bva.estenova.top）后，永久链接会自动
 # 跟随当前域名；本地 wrangler dev 预览时为 http://localhost:8787/...
+
+# ── 可选 Secret（不要写在这里，用 wrangler secret put 或控制台添加）──
+# SESSDATA：你的 B 站账号登录 Cookie（浏览器 F12 → Application → Cookies →
+#   https://www.bilibili.com → SESSDATA 的值）。配置后 API 请求携带登录态，
+#   可绕过 Cloudflare 出口 IP 触发的 -412 风控。配置方式：
+#     pnpm exec wrangler secret put SESSDATA
+#   或 Cloudflare 控制台 → Workers → bva-resolve → Settings → Variables and
+#   Secrets → Add secret → 名称 SESSDATA，值粘贴 Cookie 值。
+#   注意：SESSDATA 是账号凭证，请勿提交到仓库或泄露。

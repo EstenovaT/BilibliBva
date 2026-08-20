@@ -1,0 +1,96 @@
+════════════════════════════════════════════════════════════
+  Cloudflare Tunnel + Python 后端 部署方案（稳定方案）
+  —— 解决 Cloudflare Worker 出口 IP 被 B 站风控（-412）问题
+════════════════════════════════════════════════════════════
+
+一、为什么需要本方案
+────────────────────────────────────────────────────────────
+  Cloudflare Worker 的请求从 Cloudflare 境外边缘 IP 出站，B 站
+  对该类 IP 风控严格（-412），导致在线解析失败。
+  Python 后端运行在你自己（国内）的机器/服务器上，请求从国内
+  IP 出站，基本不会被风控；Cloudflare 只负责隧道、HTTPS、域名。
+
+二、架构
+────────────────────────────────────────────────────────────
+  用户浏览器 → https://bva.estenova.top
+             → Cloudflare 边缘（HTTPS 自动）
+             → Cloudflare Tunnel（cloudflared，无需开端口/公网 IP）
+             → 本机 http://127.0.0.1:8080（Python resolve_server.py）
+             → Python 后端 → B 站 API（国内 IP 出站，无风控）
+
+三、环境要求
+────────────────────────────────────────────────────────────
+  - 一台能长期在线的机器（家用电脑保持开机 / 云服务器均可）
+  - Python 3.7+（本仓库 Python 后端零第三方依赖）
+  - bva.estenova.top 域名已在 Cloudflare 托管（添加站点、改 Nameserver）
+  - cloudflared 客户端
+
+四、部署步骤（Windows 示例；Linux 命令类似）
+────────────────────────────────────────────────────────────
+  1. 安装 cloudflared：
+       winget install cloudflare.cloudflared
+       （或下载 https://github.com/cloudflare/cloudflared/releases
+         放到任意目录，命令用 .\cloudflared.exe 代替 cloudflared）
+
+  2. 登录 Cloudflare 账号：
+       cloudflared tunnel login
+       （自动打开浏览器授权，会在本机生成凭据）
+
+  3. 创建命名隧道：
+       cloudflared tunnel create bva
+       （记住输出的 Tunnel ID，如 1a2b3c4d-...）
+
+  4. 编写隧道配置 C:\Users\<你>\.cloudflared\config.yml：
+       tunnel: 1a2b3c4d-....（填你的 Tunnel ID）
+       credentials-file: C:\Users\<你>\.cloudflared\<TunnelID>.json
+
+       ingress:
+         - hostname: bva.estenova.top
+           service: http://localhost:8080
+         - service: http_status:404
+
+  5. 绑定域名到隧道（DNS 记录，自动添加）：
+       cloudflared tunnel route dns bva bva.estenova.top
+
+  6. 启动 Python 后端：
+       cd E:\project\aiagent\biliblivBva
+       python src/script/start_local.py
+       （服务跑在 127.0.0.1:8080，代理播放默认开启，无时长限制）
+
+  7. 启动隧道：
+       cloudflared tunnel run bva
+       看到 "Registered tunnel connection" 即成功
+
+  8. 验证：
+       浏览器访问 https://bva.estenova.top/
+       解析一个视频，正常返回信息与直链
+
+五、开机自启（可选）
+────────────────────────────────────────────────────────────
+  Windows（服务方式）：
+    cloudflared service install
+    （需先配置好 config.yml；卸载：cloudflared service uninstall）
+  或使用 NSSM 把 cloudflared 和 python start_local.py 都注册为服务。
+  注意：Windows 服务方式默认以 SYSTEM 运行，路径权限需确认。
+
+  Linux（systemd，云服务器）：
+    sudo cloudflared service install
+    启动/查看状态：
+      sudo systemctl enable --now cloudflared
+      sudo systemctl status cloudflared
+
+六、对比 Worker 版
+────────────────────────────────────────────────────────────
+  ✅ 解析稳定：国内 IP 出站，无 -412
+  ✅ 代理播放无 30 秒限制，1080P 网页内可播
+  ✅ /ex 完全版入口同样可用（Python 后端已支持）
+  ⚠️ 需要一台常开机器；网页、域名、API 行为与 Worker 版完全一致
+  ⚠️ 流量走你的机器/服务器带宽，注意用量
+
+七、备注
+────────────────────────────────────────────────────────────
+  - 若不想改域名，也可先访问隧道提供的临时域名体验
+    （cloudflared tunnel --url http://localhost:8080，随机 *.trycloudflare.com）
+  - 此方案与 Worker 版互不冲突：Worker 仍可保留（配 SESSDATA 后
+    可能也能解析），两条路可同时在线，域名任选其一
+════════════════════════════════════════════════════════════
