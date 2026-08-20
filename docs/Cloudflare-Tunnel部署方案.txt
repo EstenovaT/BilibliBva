@@ -58,11 +58,12 @@
        cd E:\project\aiagent\biliblivBva
        python src/script/start_local.py
        （服务跑在 127.0.0.1:8080，代理播放默认开启，无时长限制）
-       可选：设置 SESSDATA 登录 Cookie 进一步降低风控概率
-       （登录 bilibili.com 后从浏览器 Cookies 复制 SESSDATA 值）：
-         Windows:  set BILI_SESSDATA=你的值
-         Linux:    export BILI_SESSDATA=你的值
-       ⚠️ SESSDATA 是账号凭证，仅放环境变量，勿写入代码/仓库/泄露
+       可选：设置 B 站会话 Cookie 降低风控概率（推荐 BILI_COOKIE 整段）：
+         Windows:  set BILI_COOKIE=完整Cookie字符串
+         Linux:    export BILI_COOKIE=完整Cookie字符串
+       获取方式：浏览器登录 bilibili.com 后，F12 → 应用 → Cookie →
+       复制全部 Cookie 字符串（含 buvid3/buvid4/bili_ticket/SESSDATA）。
+       ⚠️ Cookie 是账号凭证，仅放环境变量，勿写入代码/仓库/泄露
 
   7. 启动隧道：
        cloudflared tunnel run bva

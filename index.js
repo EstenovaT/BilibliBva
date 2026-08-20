@@ -137,8 +137,11 @@ async function ensureBuvid3() {
   return _buvid3;
 }
 
-// 组装请求 Cookie：buvid3（自动预热）+ SESSDATA（可选，登录态可绕过 -412）
+// 组装请求 Cookie：优先用整段会话 Cookie（BILI_COOKIE，最接近真实浏览器，
+// 含 buvid3/buvid4/bili_ticket/SESSDATA）；否则用 buvid3（自动预热）+ SESSDATA
 function buildBiliCookie() {
+  const full = _env && _env.BILI_COOKIE;
+  if (full) return full;
   const parts = [];
   if (_buvid3) parts.push(_buvid3);
   const sess = _env && _env.SESSDATA;

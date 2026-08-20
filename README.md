@@ -135,7 +135,8 @@ curl "http://localhost:8787/api/resolve?url=BV1xx411c7mD&p=1&qn=80"
 | `HOST` | `0.0.0.0` | 监听地址 |
 | `BILI_PROXY` | `0` | `1` 时开启 `/proxy` 代理播放 |
 | `PERM_DOMAIN` | `bva.estenova.top` | 永久解析链接域名 |
-| `BILI_SESSDATA` | 空 | B 站登录 Cookie（SESSDATA），携带登录态降低风控概率 |
+| `BILI_COOKIE` | 空 | **B 站完整会话 Cookie**（推荐），绕过 -412 风控 |
+| `BILI_SESSDATA` | 空 | B 站登录 Cookie（SESSDATA 项），简便备选 |
 | `BILI_INDEX` | `../webui/index.html` | 网页文件路径覆盖 |
 
 ## 环境变量（Worker 版，见 wrangler.toml）

@@ -22,10 +22,12 @@ PROXY = "0"
 # 跟随当前域名；本地 wrangler dev 预览时为 http://localhost:8787/...
 
 # ── 可选 Secret（不要写在这里，用 wrangler secret put 或控制台添加）──
-# SESSDATA：你的 B 站账号登录 Cookie（浏览器 F12 → Application → Cookies →
-#   https://www.bilibili.com → SESSDATA 的值）。配置后 API 请求携带登录态，
-#   可绕过 Cloudflare 出口 IP 触发的 -412 风控。配置方式：
-#     pnpm exec wrangler secret put SESSDATA
+# BILI_COOKIE：B 站完整会话 Cookie（推荐，最接近真实浏览器）。
+#   浏览器登录 bilibili.com 后，F12 → 应用 → Cookie → 复制全部 Cookie 字符串，
+#   含 buvid3/buvid4/bili_ticket/SESSDATA 等，可绕过 Cloudflare 出口 IP 的 -412。
+# SESSDATA：仅登录 Cookie 的 SESSDATA 项（简便备选；playurl 接口可能仍被 412）。
+# 配置方式（二选一）：
+#   pnpm exec wrangler secret put BILI_COOKIE
 #   或 Cloudflare 控制台 → Workers → bva-resolve → Settings → Variables and
-#   Secrets → Add secret → 名称 SESSDATA，值粘贴 Cookie 值。
-#   注意：SESSDATA 是账号凭证，请勿提交到仓库或泄露。
+#   Secrets → Add secret → 名称 BILI_COOKIE，值粘贴 Cookie 字符串。
+# ⚠️ Cookie 是账号凭证，请勿提交到仓库或泄露；登录失效后需重新获取。
