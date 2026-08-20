@@ -79,6 +79,11 @@ pnpm dev          # 等价于 pnpm exec wrangler dev，默认 http://localhost:8
 > 完整步骤：`docs/Cloudflare-Tunnel部署方案.txt`；
 > 现成文件：`deploy/tunnel/config.example.yml`、`deploy/tunnel/start_tunnel.bat`。
 
+> **只要 DNS 不要代理？** 用「DNS only 直连服务器」方案：A 记录灰云指向
+> 国内服务器，Nginx + certbot 自签 HTTPS，步骤见
+> `docs/DNS-only直连部署方案.txt`（Nginx 配置：`deploy/nginx/bva.estenova.top.conf`）。
+> 注意：Tunnel 方案必须开代理（橙云），与 DNS only 互斥，二选一。
+
 ```bash
 pnpm login        # 或 pnpm exec wrangler login，授权 Cloudflare 账号
 pnpm deploy       # 部署 Worker，输出形如 https://bva-resolve.<你的子域>.workers.dev
