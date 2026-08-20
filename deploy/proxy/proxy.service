@@ -1,0 +1,21 @@
+# 极简 HTTP 代理 - systemd 服务（可选）
+# 用法：
+#   1. 把 proxy.py 放到 /opt/biliblivBva/deploy/proxy/proxy.py
+#   2. 修改下面 Environment 里的端口/Token
+#   3. sudo cp proxy.service /etc/systemd/system/
+#      sudo systemctl daemon-reload && sudo systemctl enable --now proxy
+#   4. 日志: journalctl -u proxy -f
+[Unit]
+Description=Bilibili Parse HTTP Proxy
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/biliblivBva/deploy/proxy
+Environment=PROXY_TOKEN=请改成你的Token
+ExecStart=/usr/bin/python3 /opt/biliblivBva/deploy/proxy/proxy.py 12860
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
