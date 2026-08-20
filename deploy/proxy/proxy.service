@@ -1,19 +1,18 @@
-# 极简 HTTP 代理 - systemd 服务（可选）
-# 用法：
-#   1. 把 proxy.py 放到 /opt/biliblivBva/deploy/proxy/proxy.py
-#   2. 修改下面 Environment 里的端口/Token
-#   3. sudo cp proxy.service /etc/systemd/system/
-#      sudo systemctl daemon-reload && sudo systemctl enable --now proxy
-#   4. 日志: journalctl -u proxy -f
+# 极简 HTTP/HTTPS 代理 - systemd 服务（开机自启 + 崩溃自动重启）
+# 推荐直接用 setup_ubuntu.sh 一键生成本文件，无需手改：
+#   sudo bash deploy/proxy/setup_ubuntu.sh 12860 你的Token
+# 手动方式：
+#   1. 把 proxy.py 放到 /opt/proxy/proxy.py
+#   2. 修改下面的 PROXY_TOKEN
+#   3. sudo cp proxy.service /etc/systemd/system/ && sudo systemctl enable --now proxy
 [Unit]
 Description=Bilibili Parse HTTP Proxy
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/biliblivBva/deploy/proxy
+ExecStart=/usr/bin/python3 /opt/proxy/proxy.py 12860
 Environment=PROXY_TOKEN=请改成你的Token
-ExecStart=/usr/bin/python3 /opt/biliblivBva/deploy/proxy/proxy.py 12860
 Restart=always
 RestartSec=3
 
