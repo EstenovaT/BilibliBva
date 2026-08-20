@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Install worker deps (frozen lockfile)
+        working-directory: src/worker
+        run: pnpm install --frozen-lockfile
+
+      - name: Worker JS syntax check
+        working-directory: src/worker
+        run: node --check index.js
+
+      - name: Python syntax check (server + scripts)
+        run: python -m py_compile src/server/resolve_server.py src/script/start_local.py src/script/test_driver.py

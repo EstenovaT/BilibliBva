@@ -1,0 +1,16 @@
+{
+  "name": "bva-resolve-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "B站视频在线解析 - Cloudflare Worker 后端（含静态网页托管）",
+  "packageManager": "pnpm@11.21.0",
+  "scripts": {
+    "dev": "wrangler dev",
+    "preview": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "login": "wrangler login"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

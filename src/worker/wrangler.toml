@@ -1,0 +1,22 @@
+# Cloudflare Worker 配置 —— B站视频在线解析
+# 文档: https://developers.cloudflare.com/workers/wrangler/configuration/
+
+name = "bva-resolve"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+# 静态网页目录（相对于本文件所在目录）→ src/webui
+# 网页文件、API、302 永久链接由同一个 Worker 提供，同源无跨域问题
+# run_worker_first = true：所有请求先进入 Worker（否则 /?bv=... 会被
+# 静态资源 index.html 直接命中，永久链接 302 跳转不生效），
+# 再由 Worker 决定用 env.ASSETS.fetch() 返回网页
+assets = { directory = "../webui", binding = "ASSETS", run_worker_first = true }
+
+[vars]
+# 视频代理播放（/proxy）：
+#   0 = 关闭（推荐，公开站点省流量；网页上会隐藏「代理播放」按钮）
+#   1 = 开启（Worker 转发视频流，注意免费额度 CPU/时长限制）
+PROXY = "0"
+
+# 部署到正式域名（绑定自定义域 bva.estenova.top）后，永久链接会自动
+# 跟随当前域名；本地 wrangler dev 预览时为 http://localhost:8787/...

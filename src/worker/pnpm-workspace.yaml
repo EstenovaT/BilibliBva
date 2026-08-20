@@ -1,0 +1,6 @@
+# pnpm 设置（pnpm 11 起配置迁移到本文件）
+# 允许执行构建脚本的依赖：esbuild / workerd 的 postinstall 会下载平台二进制，
+# pnpm 默认拦截第三方构建脚本，不声明则 wrangler dev 无法运行
+allowBuilds:
+  esbuild: true
+  workerd: true

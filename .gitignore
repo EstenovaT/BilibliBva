@@ -1,0 +1,20 @@
+# ── Python ──
+__pycache__/
+*.pyc
+*.pyo
+launch.log
+
+# ── Node / pnpm / Wrangler ──
+node_modules/
+.pnpm-store/
+.pnpm-cache/
+.wrangler/
+.npm-cache/
+.dev.vars
+.env*
+dist/
+
+# ── 系统 / 其他 ──
+.DS_Store
+Thumbs.db
+*.exe
