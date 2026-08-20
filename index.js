@@ -100,11 +100,72 @@ function picContentType(urlStr) {
 
 // ─── B 站 API ─────────────────────────────────────────────
 
+// 最近一次 API 请求的失败原因（供错误提示；多请求下可能互相覆盖，仅作提示）
+let _lastApiError = "";
+
+// buvid3 cookie 预热：B 站对"无 cookie 的陌生 IP"风控严格（-412），
+// 先访问 www.bilibili.com 拿到 buvid3，再携带调用 API，可显著降低被风控概率
+let _buvid3 = "";
+let _buvid3Ts = 0;
+const BUVID_TTL = 10 * 60 * 1000; // 10 分钟
+
+async function ensureBuvid3() {
+  if (_buvid3 && Date.now() - _buvid3Ts < BUVID_TTL) return _buvid3;
+  try {
+    const resp = await fetch("https://www.bilibili.com/", {
+      headers: { "User-Agent": HEADERS["User-Agent"] },
+      redirect: "follow",
+    });
+    let cookies = [];
+    if (typeof resp.headers.getSetCookie === "function") {
+      cookies = resp.headers.getSetCookie();
+    } else {
+      const sc = resp.headers.get("set-cookie");
+      if (sc) cookies = [sc];
+    }
+    for (const c of cookies) {
+      const m = /buvid3=([^;,\s]+)/.exec(c);
+      if (m) { _buvid3 = "buvid3=" + m[1]; break; }
+    }
+    _buvid3Ts = Date.now();
+  } catch (e) {
+    // 预热失败则继续用无 cookie 请求（保留旧值）
+  }
+  return _buvid3;
+}
+
 async function biliGet(urlStr) {
-  const resp = await fetch(urlStr, { headers: HEADERS });
+  const buvid = await ensureBuvid3();
+  const headers = { ...HEADERS };
+  if (buvid) headers["Cookie"] = buvid;
+  let resp;
+  try {
+    resp = await fetch(urlStr, { headers });
+  } catch (e) {
+    _lastApiError = `网络请求失败: ${e.message}`;
+    return null;
+  }
+  const status = resp.status;
   let data = null;
-  try { data = await resp.json(); } catch (e) { data = null; }
-  if (data && data.code === 0 && data.data) return data.data;
+  try {
+    const raw = await resp.text();
+    data = JSON.parse(raw);
+  } catch (e) {
+    data = null;
+  }
+  if (data && data.code === 0 && data.data) {
+    _lastApiError = "";
+    return data.data;
+  }
+  if (data) {
+    const code = data.code;
+    if (code === -412) _lastApiError = "B站风控拦截(-412)：当前出口 IP 被 B 站限制";
+    else if (code === -404) _lastApiError = "视频不存在或已被删除(-404)";
+    else if (code === -403) _lastApiError = "访问被拒绝(-403)：可能需要登录或该视频不可见";
+    else _lastApiError = `B站API错误(code=${code} msg=${data.message || ""})`;
+  } else {
+    _lastApiError = `HTTP ${status}，响应非 JSON`;
+  }
   return null;
 }
 
@@ -139,9 +200,10 @@ async function resolveVideo(bvid, aid, page, qn, origin, proxyOn) {
     info = await biliGet(`https://api.bilibili.com/x/web-interface/view?aid=${aid}`);
   }
   if (!info) {
+    const reason = _lastApiError || "未知原因";
     return {
       code: -2,
-      message: "视频信息获取失败：视频不存在、已被删除，或触发 B 站风控(-412)，请稍后重试",
+      message: `视频信息获取失败（${reason}）`,
     };
   }
 
@@ -273,7 +335,10 @@ async function handlePic(request, q) {
     return json({ code: 400, message: "封面地址不合法" }, 400);
   }
   try {
-    const upstream = await fetch(urlStr, { headers: HEADERS });
+    const buvid = await ensureBuvid3();
+    const headers = { ...HEADERS };
+    if (buvid) headers["Cookie"] = buvid;
+    const upstream = await fetch(urlStr, { headers });
     if (!upstream.ok) return json({ code: -1, message: "封面获取失败" }, 502);
     const body = await upstream.arrayBuffer();
     if (body.byteLength < 100) return json({ code: -1, message: "封面内容异常" }, 502);

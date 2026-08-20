@@ -143,6 +143,9 @@ curl "http://localhost:8787/api/resolve?url=BV1xx411c7mD&p=1&qn=80"
   代理播放由后端转发流量，公开站点注意流量成本。
 - **B 站风控（-412）**：B 站对异常 IP/频率有风控，解析接口可能偶发
   `-412`，稍后重试或更换网络即可；Cloudflare 出口 IP 触发概率相对更高。
+  Worker 已内置 **buvid3 cookie 预热**（先访问 www.bilibili.com 再调 API）
+  降低风控概率；若线上仍提示 `-412`，建议改用 Cloudflare Tunnel +
+  本地 Python 后端（请求从国内 IP 出站，基本不受风控影响）。
 - **代理播放为隐藏功能**：在线版默认页面只提供「直接播放」与复制直链；
   在域名后加 `/ex`（如 `https://bva.estenova.top/ex`）打开完全版网页，
   即可使用「代理播放」。
