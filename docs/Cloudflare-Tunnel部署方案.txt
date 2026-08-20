@@ -140,4 +140,24 @@
     可能也能解析），两条路可同时在线，域名任选其一
   - Worker 版代码中的 SESSDATA 登录功能保留（env.SESSDATA）；
     Python 版对应环境变量为 BILI_SESSDATA
+
+八、DNS 代理（橙云）开关说明
+────────────────────────────────────────────────────────────
+  背景：域名绑到 Cloudflare Worker 后，DNS 记录的「代理(橙云)」开关
+  会被锁定为开启且无法手动关闭（Worker 自定义域的强制要求）。
+  若需要关闭代理（灰云/DNS only），必须先解除 Worker 绑定。
+
+  解除 Worker 绑定步骤：
+    1. Cloudflare 控制台 → Workers & Pages → bva-resolve
+    2. Settings → Domains（或 Triggers → Custom Domains）
+    3. 找到 bva.estenova.top → Remove（解除绑定）
+    4. 回到 DNS 页：该记录变为普通记录，代理开关即可切换
+
+  三种路由与代理模式的对应关系：
+    ├─ Worker 方案（域名绑 Worker）   → 必须橙云（强制，无法关闭）
+    ├─ Tunnel 方案（隧道 CNAME）      → 必须橙云（隧道只能经代理转发）
+    └─ 直连服务器（A 记录到国内 IP）  → 灰云（DNS only）关闭代理
+       └─ 此时 HTTPS 由服务器自己签（Nginx + certbot），Cloudflare
+          不再提供边缘 HTTPS；见原计划表第六部分 Nginx+certbot 方案
+          （服务器需开放 80/443 端口，国内服务器涉及备案问题）
 ════════════════════════════════════════════════════════════
