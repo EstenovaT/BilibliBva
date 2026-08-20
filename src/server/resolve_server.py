@@ -42,6 +42,23 @@ PROXY_ENABLED = os.environ.get("BILI_PROXY", "0") == "1"
 # 永久解析链接域名（可配置；默认 bva.estenova.top，与 bot 插件保持一致）
 PERM_DOMAIN = os.environ.get("PERM_DOMAIN", "bva.estenova.top")
 
+# 可选：B 站 API 走 HTTP(S) 代理（环境变量 BILI_HTTP_PROXY）。
+# 适合本机直连 B 站被风控、但有国内代理（如 Clash 等）的场景；
+# 代理出口必须是未被风控的国内 IP 才有意义。也兼容标准 HTTPS_PROXY。
+BILI_HTTP_PROXY = os.environ.get("BILI_HTTP_PROXY", "").strip()
+
+
+def _build_opener():
+    """构造 urllib opener；配置了 BILI_HTTP_PROXY 时走代理"""
+    if BILI_HTTP_PROXY:
+        proxy = urllib.request.ProxyHandler({
+            "http": BILI_HTTP_PROXY,
+            "https": BILI_HTTP_PROXY,
+        })
+        return urllib.request.build_opener(proxy)
+    return urllib.request.build_opener()
+
+
 # 可选：B 站登录态 Cookie（降低风控概率；二选一）
 #   BILI_COOKIE    ：整段 Cookie 字符串（推荐，浏览器复制完整 Cookie，
 #                    含 buvid3/buvid4/bili_ticket/SESSDATA，最接近真实会话）
@@ -129,7 +146,7 @@ def _api_get(url: str, timeout: int = 15) -> Optional[dict]:
     global _last_api_error
     req = urllib.request.Request(url, headers=HEADERS)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _build_opener().open(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             if data.get("code") == 0:
                 _last_api_error = ""
