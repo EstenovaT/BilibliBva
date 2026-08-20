@@ -1,27 +1,27 @@
 @echo off
 rem ============================================
-rem  Cloudflare Tunnel ä¸€é”®å¯åŠ¨ (Windows)
-rem  å‰ç½®ï¼šå·²æŒ‰ docs/Cloudflare-Tunneléƒ¨ç½²æ–¹æ¡ˆ.txt
-rem         å®Œæˆ login / create / route dns é…ç½®
-rem  ç”¨æ³•ï¼šåŒå‡»æœ¬è„šæœ¬ï¼Œæˆ–å‘½ä»¤è¡Œè¿è¡Œ
+rem  Cloudflare Tunnel Ò»¼üÆô¶¯ (Windows)
+rem  Ç°ÖÃ£ºÒÑÔËĞĞ setup_tunnel.ps1 Íê³ÉÅäÖÃ
+rem  ÓÃ·¨£ºË«»÷±¾½Å±¾£¬»òÃüÁîĞĞÔËĞĞ
 rem ============================================
 cd /d "%~dp0"
 
 where cloudflared >nul 2>nul
 if errorlevel 1 (
-    echo [ERROR] æœªæ‰¾åˆ° cloudflaredï¼Œè¯·å…ˆå®‰è£…ï¼š
+    echo [ERROR] Î´ÕÒµ½ cloudflared£¬ÇëÏÈÔËĞĞ setup_tunnel.ps1 »ò°²×°£º
     echo         winget install cloudflare.cloudflared
     pause
     exit /b 1
 )
 
-echo [1/2] å¯åŠ¨ Python åç«¯ (127.0.0.1:8080) ...
-rem å¦‚éœ€æºå¸¦ B ç«™ç™»å½• Cookie é™ä½é£æ§ï¼Œå…ˆå–æ¶ˆä¸‹é¢ä¸€è¡Œçš„æ³¨é‡Šå¹¶å¡«ä½ çš„å€¼ï¼š
-rem set BILI_SESSDATA=ä½ çš„SESSDATAå€¼
-start "Bç«™è§£æåç«¯" cmd /k "cd /d E:\project\aiagent\biliblivBva && python src\script\start_local.py"
+echo [1/2] Æô¶¯ Python ºó¶Ë (127.0.0.1:8080) ...
+rem ¿ÉÑ¡£ºÅäÖÃ B Õ¾ÍêÕû»á»° Cookie ½µµÍ·ç¿Ø£¨ä¯ÀÀÆ÷µÇÂ¼ bilibili.com ºó
+rem ´Ó F12 ¸´ÖÆÕû¶Î Cookie£©£¬È¥µôÏÂÃæÒ»ĞĞ×¢ÊÍ²¢ÌîÈëÄãµÄÖµ£º
+rem set BILI_COOKIE=ÄãµÄÍêÕûCookie×Ö·û´®
+start "BÕ¾½âÎöºó¶Ë" cmd /k "cd /d E:\project\aiagent\biliblivBva && python src\script\start_local.py"
 timeout /t 2 >nul
 
-echo [2/2] å¯åŠ¨ Cloudflare Tunnel (bva) ...
-echo      çœ‹åˆ° "Registered tunnel connection" å³æˆåŠŸ
+echo [2/2] Æô¶¯ Cloudflare Tunnel (bva) ...
+echo      ¿´µ½ "Registered tunnel connection" ¼´³É¹¦
 cloudflared tunnel run bva
 pause

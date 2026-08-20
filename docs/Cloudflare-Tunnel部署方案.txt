@@ -27,6 +27,15 @@
 
 四、部署步骤（Windows 示例；Linux 命令类似）
 ────────────────────────────────────────────────────────────
+  0. 一键配置（推荐，Windows）：
+       deploy/tunnel/setup_tunnel.ps1
+       自动完成：检查/安装 cloudflared → login → 创建隧道 →
+       生成 config.yml → 绑定域名；随后运行
+       deploy/tunnel/start_tunnel.bat 一键启动（后端+隧道）。
+
+      「快速体验模式」（无需域名）：deploy/tunnel/quick_tunnel.bat
+      直接生成临时公网地址 https://xxx.trycloudflare.com，先验证方案可用。
+
   1. 安装 cloudflared：
        winget install cloudflare.cloudflared
        （或下载 https://github.com/cloudflare/cloudflared/releases
@@ -83,7 +92,15 @@
   注意：Windows 服务方式默认以 SYSTEM 运行，路径权限需确认。
 
   Linux（systemd，云服务器）：
+    仓库已提供后端服务单元：deploy/tunnel/bili-resolve.service
+    （复制到 /etc/systemd/system/，可选在 /etc/bili-resolve.env
+     配置 BILI_PROXY / BILI_COOKIE）
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now bili-resolve
+    sudo systemctl status bili-resolve
+    隧道开机自启：
     sudo cloudflared service install
+    （需先按上文把 config.yml 放到 /etc/cloudflared/）
     启动/查看状态：
       sudo systemctl enable --now cloudflared
       sudo systemctl status cloudflared

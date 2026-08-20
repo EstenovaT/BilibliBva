@@ -1,0 +1,31 @@
+# Bilibili Resolve - Python 后端 systemd 服务（Linux 云服务器/VPS）
+# 用法：
+#   1. 上传/克隆仓库到 /opt/biliblivBva
+#   2. 复制本文件到 /etc/systemd/system/bili-resolve.service
+#   3. （可选）配置 B 站会话 Cookie：
+#        sudo tee /etc/bili-resolve.env <<'EOF'
+#        BILI_PROXY=1
+#        BILI_COOKIE=你的完整Cookie字符串
+#        EOF
+#   4. 启动并开机自启：
+#        sudo systemctl daemon-reload
+#        sudo systemctl enable --now bili-resolve
+#        sudo systemctl status bili-resolve
+#   5. 隧道（Cloudflare Tunnel）：
+#        sudo cloudflared service install   # 用 /etc/cloudflared/config.yml
+# 监听 0.0.0.0:8080；也可配合 Nginx 反代到公网端口（无需 Tunnel 时）
+
+[Unit]
+Description=Bilibili Resolve Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/biliblivBva
+EnvironmentFile=-/etc/bili-resolve.env
+ExecStart=/usr/bin/python3 /opt/biliblivBva/src/server/resolve_server.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
