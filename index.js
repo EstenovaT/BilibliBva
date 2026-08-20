@@ -302,6 +302,13 @@ async function resolveVideo(bvid, aid, page, qn, origin, proxyOn) {
 
 // ─── 静态资源 ─────────────────────────────────────────────
 
+// 前端直连模式：API_BASE 配置后，Worker 只托管网页并把后端地址注入页面，
+// 解析请求由浏览器直接发给该后端（如 https://yun.estenova.top，需 HTTPS+CORS），
+// 页面域名保持本站不变，且不依赖 Worker→后端 的跨境连通
+function apiBase(env) {
+  return (env && env.API_BASE ? String(env.API_BASE).replace(/\/+$/, "") : "");
+}
+
 const FALLBACK_HTML = `<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <title>B站在线解析</title></head>
@@ -316,6 +323,27 @@ async function serveAsset(request, env) {
   return new Response(FALLBACK_HTML, {
     headers: { "Content-Type": "text/html; charset=utf-8" },
   });
+}
+
+// 注入 API_BASE 后返回页面（前端直连模式）
+async function serveAssetInjected(request, env) {
+  const resp = await serveAsset(request, env);
+  if (!resp || resp.status !== 200) return resp;
+  const base = apiBase(env);
+  if (!base) return resp;
+  try {
+    const text = await resp.text();
+    const injected = text.replace(
+      'window.__API_BASE__ = ""',
+      `window.__API_BASE__ = "${base.replace(/"/g, '\\"')}"`
+    );
+    return new Response(injected, {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  } catch (e) {
+    return resp;
+  }
 }
 
 // ─── 各路由处理 ───────────────────────────────────────────
@@ -467,7 +495,12 @@ export default {
           has_bili_cookie: !!(env && env.BILI_COOKIE),
           has_sessdata: !!(env && env.SESSDATA),
           backend_url_set: hasBackend,
+          api_base_set: !!apiBase(env),
         });
+      }
+      // 前端直连模式：所有路径返回注入 API_BASE 的页面（解析由浏览器直接发后端）
+      if (apiBase(env)) {
+        return serveAssetInjected(request, env);
       }
       if (path === "/api/resolve") {
         return hasBackend ? relayToBackend(request, env) : await handleApi(request, q, env);

@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>B站在线解析</title>
+<!-- API 后端地址（由 Worker 部署时注入；留空 = 同源 /api） -->
+<script>window.__API_BASE__ = "";</script>
 <style>
   :root {
     --bg: #fff0f5;
@@ -349,6 +351,11 @@
   var urlInput = $("url"), btn = $("btn"), statusEl = $("status");
   var resultEl = $("result"), video = $("video");
 
+  // API 后端地址：Worker 部署时可注入（如 https://yun.estenova.top），
+  // 解析请求隐藏指向该地址，页面域名保持不变；留空则请求本站 /api
+  var API_BASE = (window.__API_BASE__ || "").replace(/\/+$/, "");
+  function api(path) { return API_BASE + path; }
+
   var QUALITIES = [120, 116, 112, 80, 64, 32, 16];
   var QUALITY_NAMES = { 120: "4K", 116: "1080P60", 112: "1080P+", 80: "1080P",
                         74: "720P60", 64: "720P", 32: "480P", 16: "360P" };
@@ -409,7 +416,7 @@
 
     var qs = new URLSearchParams({ url: currentInput, p: String(page), qn: String(qn) });
     if (EX) qs.set("ex", "1");
-    fetch("/api/resolve?" + qs.toString())
+    fetch(api("/api/resolve?" + qs.toString()))
       .then(function (resp) { return resp.json().catch(function () {
         throw new Error("服务器返回异常 (HTTP " + resp.status + ")");
       }); })
@@ -434,7 +441,7 @@
     // 封面走后端 /pic 代理（B 站图片 CDN 防盗链，浏览器直连会 403）
     var pic = d.pic || "";
     if (pic.indexOf("//") === 0) pic = "https:" + pic;
-    $("cover").src = pic ? ("/pic?url=" + encodeURIComponent(pic)) : "";
+    $("cover").src = pic ? (api("/pic?url=") + encodeURIComponent(pic)) : "";
     $("cover").style.visibility = "visible";
     $("cover").onerror = function () {
       this.style.visibility = "hidden";
@@ -548,13 +555,31 @@
   $("btnProxy").addEventListener("click", function () {
     var src = $("mp4Url").textContent;
     if (!src || src.indexOf("http") !== 0) { setStatus("暂无直链", "error"); return; }
-    video.src = "/proxy?url=" + encodeURIComponent(src) + (EX ? "&ex=1" : "");
+    video.src = api("/proxy?url=" + encodeURIComponent(src)) + (EX ? "&ex=1" : "");
     video.play().catch(function () { });
   });
 
   video.addEventListener("error", function () {
     setStatus("视频播放失败：可能被 B 站防盗链拦截，请尝试「代理播放」", "error");
   });
+
+  // 永久链接自动解析：/?bv=xxx&p=N 或 ?url=... 打开页面后直接解析
+  (function autoParse() {
+    var sp = new URLSearchParams(location.search);
+    var auto = sp.get("bv") || sp.get("av") || sp.get("url") || "";
+    if (auto) {
+      var bvMatch = /(BV\w{10})/i.exec(auto);
+      var avMatch = /(?:av|AV)(\d+)/.exec(auto);
+      urlInput.value = bvMatch ? bvMatch[1] : (avMatch ? avMatch[0] : auto);
+      var p = parseInt(sp.get("p") || "1", 10) || 1;
+      var qn = parseInt(sp.get("qn") || "0", 10) || DEFAULT_QN;
+      if (qn && $("selQuality").querySelector('option[value="' + qn + '"]')) {
+        $("selQuality").value = String(qn);
+      }
+      currentInput = urlInput.value;
+      doRequest(p, qn);
+    }
+  })();
 })();
 </script>
 </body>
