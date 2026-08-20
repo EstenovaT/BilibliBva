@@ -339,7 +339,22 @@ async function relayToBackend(request, env) {
   if (request.method !== "GET" && request.method !== "HEAD") {
     init.body = request.body;
   }
-  const resp = await fetch(target, init);
+  let resp;
+  try {
+    resp = await fetch(target, init);
+  } catch (e) {
+    // 后端不可达：返回明确提示而非 Cloudflare 的 530
+    return json({
+      code: -1,
+      message: `后端服务不可达（${base}）: ${e.message}。请确认后端已启动、端口已放行、BACKEND_URL 正确`,
+    }, 502);
+  }
+  if (resp.status === 530) {
+    return json({
+      code: -1,
+      message: `后端服务不可达（${base}），Cloudflare 返回 530（无法连接源站）。请检查：后端是否运行、防火墙/安全组是否放行端口、BACKEND_URL 是否填写正确`,
+    }, 502);
+  }
   return new Response(resp.body, { status: resp.status, headers: resp.headers });
 }
 
