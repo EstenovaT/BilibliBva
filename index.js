@@ -176,10 +176,18 @@ async function biliGet(urlStr) {
   if (data) {
     const code = data.code;
     if (code === -412) {
-      _lastApiError = "B站风控拦截(-412)：当前出口 IP 被 B 站限制" +
-        (_env && _env.SESSDATA
-          ? "（已配置 SESSDATA 但仍被拦：Cookie 可能无效/已过期，或该 IP 段被整体限制）"
-          : "（可配置 SESSDATA 登录 Cookie 尝试绕过）");
+      const hasFull = _env && _env.BILI_COOKIE;
+      const hasSess = _env && _env.SESSDATA;
+      if (hasFull) {
+        _lastApiError = "B站风控拦截(-412)：已配置 BILI_COOKIE 仍被拦" +
+          "（Cookie 可能已失效，或该 IP 段被整体限制，建议改用国内 Tunnel 方案）";
+      } else if (hasSess) {
+        _lastApiError = "B站风控拦截(-412)：SESSDATA 单项不足以绕过 playurl 风控，" +
+          "请改配 BILI_COOKIE（完整会话 Cookie）";
+      } else {
+        _lastApiError = "B站风控拦截(-412)：当前出口 IP 被 B 站限制" +
+          "（请配置 BILI_COOKIE 完整会话 Cookie 尝试绕过）";
+      }
     }
     else if (code === -404) _lastApiError = "视频不存在或已被删除(-404)";
     else if (code === -403) _lastApiError = "访问被拒绝(-403)：可能需要登录或该视频不可见";
@@ -412,6 +420,16 @@ export default {
 
     try {
       if (path === "/api/resolve") return await handleApi(request, q, env);
+      if (path === "/api/debug") {
+        // 配置自检：确认 Secret 是否已到达 Worker（不返回值本身）
+        return json({
+          code: 0,
+          message: "ok",
+          proxy_enabled: proxyEnabled(env),
+          has_bili_cookie: !!(env && env.BILI_COOKIE),
+          has_sessdata: !!(env && env.SESSDATA),
+        });
+      }
       if (path === "/proxy") return await handleProxy(request, q, env);
       if (path === "/pic") return await handlePic(request, q);
       if (path === "/" || path === "/ex") {
