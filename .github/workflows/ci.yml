@@ -28,4 +28,4 @@ jobs:
         run: node --check index.js
 
       - name: Python syntax check (server + scripts)
-        run: python -m py_compile src/server/resolve_server.py src/script/start_local.py src/script/test_driver.py
+        run: python3 -m py_compile src/server/resolve_server.py src/script/start_local.py src/script/test_driver.py
