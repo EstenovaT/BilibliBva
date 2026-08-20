@@ -320,6 +320,29 @@ async function serveAsset(request, env) {
 
 // ─── 各路由处理 ───────────────────────────────────────────
 
+// 国内后端转发模式：BACKEND_URL 配置后，API/302/封面/代理请求全部
+// 转发给国内后端（后端走代理/国内 IP 出站 → 无 -412），Worker 只
+// 负责网页托管 + 转发；未配置时退回 Worker 直连 B 站（本地开发用）
+function backendUrl(env) {
+  return (env && env.BACKEND_URL ? String(env.BACKEND_URL).replace(/\/+$/, "") : "");
+}
+
+async function relayToBackend(request, env) {
+  const base = backendUrl(env);
+  const url = new URL(request.url);
+  const target = base + url.pathname + url.search;
+  const headers = new Headers(request.headers);
+  headers.delete("host");
+  headers.delete("cf-connecting-ip");
+  headers.delete("cf-ray");
+  const init = { method: request.method, headers, redirect: "manual" };
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    init.body = request.body;
+  }
+  const resp = await fetch(target, init);
+  return new Response(resp.body, { status: resp.status, headers: resp.headers });
+}
+
 async function handleApi(request, q, env) {
   const urlParam = q.get("url") || "";
   let bvid = q.get("bv") || extractBvid(urlParam);
@@ -417,9 +440,9 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     const q = url.searchParams;
+    const hasBackend = !!backendUrl(env);
 
     try {
-      if (path === "/api/resolve") return await handleApi(request, q, env);
       if (path === "/api/debug") {
         // 配置自检：确认 Secret 是否已到达 Worker（不返回值本身）
         return json({
@@ -428,17 +451,27 @@ export default {
           proxy_enabled: proxyEnabled(env),
           has_bili_cookie: !!(env && env.BILI_COOKIE),
           has_sessdata: !!(env && env.SESSDATA),
+          backend_url_set: hasBackend,
         });
       }
-      if (path === "/proxy") return await handleProxy(request, q, env);
-      if (path === "/pic") return await handlePic(request, q);
+      if (path === "/api/resolve") {
+        return hasBackend ? relayToBackend(request, env) : await handleApi(request, q, env);
+      }
+      if (path === "/proxy") {
+        return hasBackend ? relayToBackend(request, env) : await handleProxy(request, q, env);
+      }
+      if (path === "/pic") {
+        return hasBackend ? relayToBackend(request, env) : await handlePic(request, q);
+      }
       if (path === "/" || path === "/ex") {
         // /ex：隐藏的「完全版」入口 —— 返回同一网页，前端检测到路径为 /ex
         // 后自动在 API/代理请求中附带 ex=1，从而开启代理播放
         const urlParam = q.get("url") || "";
         const bvid = q.get("bv") || extractBvid(urlParam);
         const aid = bvid ? 0 : (extractAid(urlParam) || parseInt(q.get("av") || "0", 10) || 0);
-        if (bvid || aid) return await handleLegacyLink(request, bvid, aid, q, env);
+        if (bvid || aid) {
+          return hasBackend ? relayToBackend(request, env) : await handleLegacyLink(request, bvid, aid, q, env);
+        }
         if (path === "/ex") {
           // 用 "/" 路径取 index.html，浏览器地址栏仍保持 /ex
           return serveAsset(new Request(new URL("/", request.url), request), env);

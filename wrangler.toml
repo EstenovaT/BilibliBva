@@ -18,6 +18,14 @@ assets = { directory = "src/webui", binding = "ASSETS", run_worker_first = true 
 #   1 = 开启（Worker 转发视频流，注意免费额度 CPU/时长限制）
 PROXY = "0"
 
+# ── 国内后端转发模式（推荐，解决 -412）──
+# BACKEND_URL：国内 Python 后端的公网地址。配置后，/api/resolve、
+#   /pic、/proxy、302 永久链接全部转发给该后端（后端走国内 IP/代理
+#   出站调 B 站，无 -412），Worker 只负责网页托管 + 转发。
+# 留空 = Worker 直连 B 站（会被 -412 风控，仅本地开发用）。
+# 示例：BACKEND_URL = "https://xxxx.trycloudflare.com"
+BACKEND_URL = ""
+
 # 部署到正式域名（绑定自定义域 bva.estenova.top）后，永久链接会自动
 # 跟随当前域名；本地 wrangler dev 预览时为 http://localhost:8787/...
 

@@ -72,17 +72,25 @@ pnpm dev          # 等价于 pnpm exec wrangler dev，默认 http://localhost:8
 
 ## 部署到 Cloudflare
 
-> **推荐：Cloudflare Tunnel + 本地 Python 后端（国内 IP 出站，无 -412 风控）**
-> Cloudflare Worker 的出口 IP 是境外，调 B 站 API 会被风控（-412），且
-> 无法把出口 IP 改为国内。让 Python 后端在你国内机器运行、经 Cloudflare
-> Tunnel 对外提供服务，即可稳定解析、代理播放也无 30 秒限制。
-> 完整步骤：`docs/Cloudflare-Tunnel部署方案.txt`；
-> 现成文件：`deploy/tunnel/config.example.yml`、`deploy/tunnel/start_tunnel.bat`。
+> **推荐架构：Cloudflare 网页端 + 国内后端转发（彻底解决 -412）**
+> Worker 的出口 IP 是境外，直连 B 站必被 -412 风控（实测，Cookie 也救不了）。
+> 因此让 Worker 只做**网页托管 + 转发**：把 `/api/resolve`、302 永久链接、
+> `/pic`、`/proxy` 全部转发给**国内 Python 后端**（走国内 IP/代理出站调 B 站），
+> 无 -412，且网页端保持在 Cloudflare（快、免费、无需服务器托管页面）。
 
-> **只要 DNS 不要代理？** 用「DNS only 直连服务器」方案：A 记录灰云指向
-> 国内服务器，Nginx + certbot 自签 HTTPS，步骤见
-> `docs/DNS-only直连部署方案.txt`（Nginx 配置：`deploy/nginx/bva.estenova.top.conf`）。
-> 注意：Tunnel 方案必须开代理（橙云），与 DNS only 互斥，二选一。
+```
+用户 → bva.estenova.top (Cloudflare Worker: 网页 + 转发)
+     → BACKEND_URL (国内 Python 后端，如 https://xxx.trycloudflare.com)
+     → B 站 API（国内 IP / BILI_HTTP_PROXY 代理出站）
+```
+
+配置：Worker 变量 `BACKEND_URL = 国内后端公网地址`（wrangler.toml [vars] 或
+控制台 Variables）。后端可用 `deploy/tunnel/quick_tunnel.bat` 一键起
+（本机后端 + 临时公网地址），或部署到国内服务器（`deploy/tunnel/setup_vps.sh`）。
+后端也可配合 `BILI_HTTP_PROXY`（`deploy/proxy/`）走代理出站。
+
+**备选：DNS only 直连服务器**（完全不用 Cloudflare 代理）：A 记录灰云指向
+国内服务器 + Nginx/certbot，见 `docs/DNS-only直连部署方案.txt`。
 
 ```bash
 pnpm login        # 或 pnpm exec wrangler login，授权 Cloudflare 账号

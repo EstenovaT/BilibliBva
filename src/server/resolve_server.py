@@ -379,12 +379,18 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         log.info("%s - %s", self.address_string(), fmt % args)
 
+    def _cors_headers(self):
+        # 允许跨域：供 Cloudflare Worker 转发 / 前端直连使用
+        return [("Access-Control-Allow-Origin", "*")]
+
     def _send_json(self, obj: dict, status: int = 200):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        for k, v in self._cors_headers():
+            self.send_header(k, v)
         self.end_headers()
         self.wfile.write(body)
 
@@ -393,6 +399,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        for k, v in self._cors_headers():
+            self.send_header(k, v)
         self.end_headers()
         self.wfile.write(body)
 
@@ -400,6 +408,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(302)
         self.send_header("Location", location)
         self.send_header("Cache-Control", "no-store")
+        for k, v in self._cors_headers():
+            self.send_header(k, v)
         self.end_headers()
 
     # ── GET ──
