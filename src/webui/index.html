@@ -354,6 +354,9 @@
                         74: "720P60", 64: "720P", 32: "480P", 16: "360P" };
   var DEFAULT_QN = 80; // 默认 1080P
 
+  // 完全版标记：访问 /ex 时开启代理播放（隐藏功能，默认页面不显示）
+  var EX = location.pathname === "/ex";
+
   var currentInput = "";
 
   function fmtNum(n) {
@@ -405,6 +408,7 @@
     video.load();
 
     var qs = new URLSearchParams({ url: currentInput, p: String(page), qn: String(qn) });
+    if (EX) qs.set("ex", "1");
     fetch("/api/resolve?" + qs.toString())
       .then(function (resp) { return resp.json().catch(function () {
         throw new Error("服务器返回异常 (HTTP " + resp.status + ")");
@@ -544,7 +548,7 @@
   $("btnProxy").addEventListener("click", function () {
     var src = $("mp4Url").textContent;
     if (!src || src.indexOf("http") !== 0) { setStatus("暂无直链", "error"); return; }
-    video.src = "/proxy?url=" + encodeURIComponent(src);
+    video.src = "/proxy?url=" + encodeURIComponent(src) + (EX ? "&ex=1" : "");
     video.play().catch(function () { });
   });
 

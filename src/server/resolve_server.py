@@ -386,6 +386,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._handle_proxy(query)
             elif path == "/pic":
                 self._handle_pic(query)
+            elif path == "/ex":
+                # 隐藏的「完全版」入口（与 Worker 版一致）：直接返回网页
+                self._handle_index()
             elif path == "/":
                 # 带 bv/av/url 参数 → 兼容 bot 永久链接（302 跳转直链）
                 url_param = (query.get("url") or [""])[0]

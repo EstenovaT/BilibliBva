@@ -48,14 +48,22 @@ biliblivBva/
 
 四、API 路由设计（Python 与 Worker 版一致）
 ────────────────────────────────────────────────────────────
-  GET /                       → 返回在线解析网页 index.html
+  GET /                       → 返回在线解析网页 index.html（默认版：仅直接播放）
+  GET /ex                     → 完全版网页（隐藏入口）：开启代理播放
   GET /api/resolve?url=&p=&qn= → JSON：
                                 { title, uploader, cover, stat,
                                   mp4_url, perm_link, quality,
                                   proxy_enabled, ... }
   GET /?bv=xxx&p=N             → 兼容 bot 永久链接：302 跳转 mp4 直链
   GET /pic?url=...             → 封面图片代理（带 B 站 Referer）
-  GET /proxy?url=...           → 视频代理播放（默认关闭，可配置开启）
+  GET /proxy?url=...           → 视频代理播放（需 /ex 完全版或 PROXY=1）
+
+【完全版隐藏入口说明】
+  在线版（Worker）默认页面只保留「直接播放」+ 复制直链，不显示代理播放。
+  在域名后添加 /ex（如 https://bva.estenova.top/ex）可打开完全版网页：
+  - 前端检测路径为 /ex，自动在 API 与 /proxy 请求中附带 ex=1
+  - Worker 据此返回 proxy_enabled=true（显示「代理播放」按钮）并放行 /proxy
+  - 全局开关 PROXY=1 时所有页面均为完全版（不推荐公开开启，消耗流量）
 
 五、本地运行
 ────────────────────────────────────────────────────────────

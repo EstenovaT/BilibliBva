@@ -53,6 +53,15 @@ function proxyEnabled(env) {
   return (env && env.PROXY === "1");
 }
 
+/**
+ * 是否处于「完全版」模式（允许代理播放）：
+ *   - 全局开关 env.PROXY=1（wrangler.toml [vars]），或
+ *   - 请求携带 ex=1（由 /ex 完全版网页自动附带）
+ */
+function isExMode(q, env) {
+  return proxyEnabled(env) || (q && q.get("ex") === "1");
+}
+
 function hostAllowed(urlStr, suffixes) {
   let u;
   try { u = new URL(urlStr); } catch (e) { return false; }
@@ -237,7 +246,7 @@ async function handleApi(request, q, env) {
   if (!qn || qn < 1) qn = DEFAULT_QN;
 
   const origin = new URL(request.url).origin;
-  const result = await resolveVideo(bvid, aid, page, qn, origin, proxyEnabled(env));
+  const result = await resolveVideo(bvid, aid, page, qn, origin, isExMode(q, env));
   return json(result, result.code === 0 ? 200 : 404);
 }
 
@@ -280,8 +289,9 @@ async function handlePic(request, q) {
 }
 
 async function handleProxy(request, q, env) {
-  if (!proxyEnabled(env)) {
-    return json({ code: 404, message: "代理播放未开启（设置环境变量 PROXY=1）" }, 404);
+  // 代理播放门控：PROXY=1 全局开启，或 /ex 完全版请求（携带 ex=1）
+  if (!isExMode(q, env)) {
+    return json({ code: 404, message: "代理播放未开启（/ex 完全版或 PROXY=1 可开启）" }, 404);
   }
   const urlStr = q.get("url") || "";
   if (!urlStr || !hostAllowed(urlStr, ALLOWED_PROXY_SUFFIXES)) {
@@ -316,11 +326,17 @@ export default {
       if (path === "/api/resolve") return await handleApi(request, q, env);
       if (path === "/proxy") return await handleProxy(request, q, env);
       if (path === "/pic") return await handlePic(request, q);
-      if (path === "/") {
+      if (path === "/" || path === "/ex") {
+        // /ex：隐藏的「完全版」入口 —— 返回同一网页，前端检测到路径为 /ex
+        // 后自动在 API/代理请求中附带 ex=1，从而开启代理播放
         const urlParam = q.get("url") || "";
         const bvid = q.get("bv") || extractBvid(urlParam);
         const aid = bvid ? 0 : (extractAid(urlParam) || parseInt(q.get("av") || "0", 10) || 0);
         if (bvid || aid) return await handleLegacyLink(request, bvid, aid, q, env);
+        if (path === "/ex") {
+          // 用 "/" 路径取 index.html，浏览器地址栏仍保持 /ex
+          return serveAsset(new Request(new URL("/", request.url), request), env);
+        }
         return serveAsset(request, env);
       }
       // favicon / 其他静态资源
