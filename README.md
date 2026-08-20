@@ -85,6 +85,17 @@ pnpm deploy       # 部署 Worker，输出形如 https://bva-resolve.<你的子�
 > （Cloudflare 构建环境自带 pnpm，仓库含 `pnpm-lock.yaml` 会自动识别），
 > 即可实现 push 后自动部署。
 
+### 方式三：GitHub Actions 自动部署（推荐，仓库已内置）
+
+仓库已包含 `.github/workflows/deploy.yml`，push 到 `main`/`master` 后自动
+`pnpm install` + `wrangler deploy`，不依赖 Cloudflare 构建环境。只需配置一次：
+
+1. Cloudflare 控制台 → My Profile → **API Tokens** → Create Token →
+   选 "Edit Cloudflare Workers" 模板，复制 Token；
+2. GitHub 仓库 → **Settings → Secrets and variables → Actions** →
+   New repository secret，名称填 `CLOUDFLARE_API_TOKEN`，粘贴 Token；
+3. 推送代码即自动部署，可在仓库 **Actions** 页查看部署日志。
+
 ## API 说明
 
 | 路由 | 说明 |

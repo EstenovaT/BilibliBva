@@ -1,0 +1,45 @@
+# 推送到 GitHub 后自动部署到 Cloudflare Workers
+# 使用方法：
+#   1. Cloudflare 控制台 → My Profile → API Tokens → Create Token
+#      → 选 "Edit Cloudflare Workers" 模板，复制 Token
+#   2. GitHub 仓库 → Settings → Secrets and variables → Actions
+#      → New repository secret，名称 CLOUDFLARE_API_TOKEN，粘贴 Token
+#   3. 推送 main/master 分支后自动执行本工作流部署
+name: Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches: [main, master]
+
+concurrency:
+  group: cloudflare-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: src/worker/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: src/worker
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: src/worker
+          command: deploy
