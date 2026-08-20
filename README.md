@@ -156,6 +156,9 @@ curl "http://localhost:8787/api/resolve?url=BV1xx411c7mD&p=1&qn=80"
 - **防盗链**：B 站视频直链和封面图都校验 `Referer`，浏览器直连可能 403。
   网页提供「复制直链」（配合 IDM/迅雷等工具下载）与「代理播放」两种方式；
   代理播放由后端转发流量，公开站点注意流量成本。
+- **直链播放（实测修正）**：playurl 返回的 `platform=html5` 直链**无需 Referer**，
+  浏览器 `<video>` 可直接播放（实测无 Referer 200）；「直接播放」按钮可用，
+  「代理播放」仅作为画质/特殊场景备用。
 - **B 站风控（-412）**：B 站对异常 IP/频率有风控，解析接口可能偶发
   `-412`。**实测结论**：Cloudflare Worker 出口 IP 段被 B 站整体风控，
   配置 BILI_COOKIE 完整会话 Cookie 后**仍被拦截**——该限制在 Worker
