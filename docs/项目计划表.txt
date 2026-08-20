@@ -24,17 +24,21 @@ biliblivBva/
 │   │   └── test_driver.py    #   6 项接口自测
 │   ├── server/
 │   │   └── resolve_server.py # Python 后端（http.server，零第三方依赖）
-│   ├── webui/
-│   │   └── index.html        # 在线解析网页（纯前端，无第三方依赖）
-│   └── worker/               # Cloudflare Worker（JS 版后端）
-│       ├── index.js          #   路由：/api/resolve、/pic、/proxy、302 永久链接
-│       ├── wrangler.toml     #   Wrangler 配置（静态资源 + 环境变量）
-│       └── package.json      #   pnpm dev / deploy
+│   └── webui/
+│       └── index.html        # 在线解析网页（纯前端，无第三方依赖）
+├── index.js                  # Cloudflare Worker（JS 版后端，位于仓库根目录）
+├── wrangler.toml             # Wrangler 配置（静态资源 + 环境变量）
+├── package.json              # pnpm dev / deploy
+├── pnpm-lock.yaml            # 锁文件（Cloudflare/GitHub 自动识别 pnpm）
+└── pnpm-workspace.yaml       # pnpm 构建脚本许可（esbuild/workerd）
 
 说明：
   - 本地 Python 版网页路径：src/server/resolve_server.py
     默认读取 ../webui/index.html（可用环境变量 BILI_INDEX 覆盖）
   - 本地启动脚本引用后端：src/script/*.py → ../server/resolve_server.py
+  - Worker 配置放仓库根目录的目的：Cloudflare Workers Builds / GitHub
+    Actions 连接仓库后即可自动识别（根目录默认 /、锁文件自动识别
+    pnpm、构建命令可留空），无需手写根目录与构建命令
 
 三、网页功能（src/webui/index.html）
 ────────────────────────────────────────────────────────────
@@ -72,8 +76,7 @@ biliblivBva/
   python src/script/start_local.py --check    # 环境自检
   python src/script/test_driver.py            # 6 项接口自测
 
-【Worker 版本地预览】（需要 Node.js 18+ 与 pnpm）
-  cd src/worker
+【Worker 版本地预览】（需要 Node.js 18+ 与 pnpm，在仓库根目录执行）
   pnpm install
   pnpm dev                    # wrangler dev → http://localhost:8787
 
@@ -85,8 +88,7 @@ biliblivBva/
   Cloudflare Worker，静态网页由 Worker 的 ASSETS binding 一并托管。
 
 【部署步骤】
-  1. 安装依赖并登录：
-       cd src/worker
+  1. 安装依赖并登录（仓库根目录）：
        pnpm install
        pnpm login             # 授权 Cloudflare 账号
   2. 部署：
@@ -95,11 +97,12 @@ biliblivBva/
        - 域名先在 Cloudflare 添加站点（Nameserver 接入）
        - Worker 控制台 → Settings → Domains → Add 自定义域
        - 绑定后永久链接自动变为 https://bva.estenova.top/?bv=...&p=...
-  4. GitHub 自动部署（可选）：
-       Cloudflare 控制台 → Workers Builds（或 Pages + Workers）
-       连接本 GitHub 仓库，构建命令：
-         cd src/worker && pnpm install && pnpm deploy
-       push 后自动构建部署
+  4. GitHub 自动部署（方式一：Workers Builds，免手写构建命令）：
+       Cloudflare 控制台 → Workers Builds → 连接本仓库
+       - Root directory：保持默认 /（wrangler.toml 在仓库根目录）
+       - Build command：留空（自动识别根目录 pnpm-lock.yaml，
+         自动安装依赖并按 wrangler.toml 自动部署）
+       - 若构建环境不识别 pnpm，再填 pnpm install（无需 deploy）
    5. GitHub 自动部署（方式二：GitHub Actions，推荐，仓库已内置）：
        .github/workflows/deploy.yml 已就绪，push 到 main/master 自动执行：
          pnpm install --frozen-lockfile → wrangler deploy

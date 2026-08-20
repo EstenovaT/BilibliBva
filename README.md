@@ -4,7 +4,7 @@
 mp4 临时直链、永久解析链接，并支持分 P 与画质选择（360P ~ 4K）。
 
 - **本地（Python）**：`src/script/start_local.py` 一键启动 + 自动开浏览器
-- **云端（Cloudflare Worker）**：`src/worker/` 用 JS 重写的同功能后端，
+- **云端（Cloudflare Worker）**：根目录 `index.js` 用 JS 重写的同功能后端，
   可部署到 Cloudflare Workers / Pages，纯静态网页也能在线解析
 
 ---
@@ -23,13 +23,18 @@ biliblivBva/
 │   │   └── test_driver.py    #   6 项接口自测
 │   ├── server/
 │   │   └── resolve_server.py # Python 后端（http.server，零第三方依赖）
-│   ├── webui/
-│   │   └── index.html        # 在线解析网页（纯前端，无第三方依赖）
-│   └── worker/               # Cloudflare Worker（JS 版后端）
-│       ├── index.js          #   路由：/api/resolve、/pic、/proxy、302 永久链接
-│       ├── wrangler.toml     #   Wrangler 配置（静态资源 + 环境变量）
-│       └── package.json      #   pnpm dev / deploy
+│   └── webui/
+│       └── index.html        # 在线解析网页（纯前端，无第三方依赖）
+├── index.js                  # Cloudflare Worker（JS 版后端）
+│                             #   路由：/api/resolve、/pic、/proxy、302 永久链接
+├── wrangler.toml             # Wrangler 配置（静态资源 + 环境变量）
+├── package.json              # pnpm dev / deploy
+├── pnpm-lock.yaml            # 锁文件（Cloudflare/GitHub 自动识别 pnpm）
+└── pnpm-workspace.yaml       # pnpm 构建脚本许可（esbuild/workerd）
 ```
+
+> Worker 配置放在**仓库根目录**：Cloudflare Workers Builds / GitHub Actions
+> 连接仓库后即可自动识别（根目录默认 `/`、锁文件自动识别 pnpm、构建命令可留空）。
 
 ## 快速开始
 
@@ -55,13 +60,12 @@ Windows 也可直接双击 `src/script/start_local.bat`。
 需要 Node.js 18+ 与 pnpm（`corepack enable` 或 `npm i -g pnpm`），先安装依赖（仅首次）：
 
 ```bash
-cd src/worker
 pnpm install
 pnpm dev          # 等价于 pnpm exec wrangler dev，默认 http://localhost:8787
 ```
 
 > 说明：`pnpm install` 会执行 esbuild / workerd 的构建脚本下载平台二进制，
-> 相关许可已在 `src/worker/pnpm-workspace.yaml` 的 `allowBuilds` 中声明。
+> 相关许可已在根目录 `pnpm-workspace.yaml` 的 `allowBuilds` 中声明。
 
 `pnpm dev` 会同时提供静态网页（`src/webui/`）和 Worker API，
 浏览器打开 `http://localhost:8787/` 即可体验完整功能。
@@ -69,7 +73,6 @@ pnpm dev          # 等价于 pnpm exec wrangler dev，默认 http://localhost:8
 ## 部署到 Cloudflare
 
 ```bash
-cd src/worker
 pnpm login        # 或 pnpm exec wrangler login，授权 Cloudflare 账号
 pnpm deploy       # 部署 Worker，输出形如 https://bva-resolve.<你的子域>.workers.dev
 ```
@@ -80,12 +83,16 @@ pnpm deploy       # 部署 Worker，输出形如 https://bva-resolve.<你的子�
    需先把域名接入 Cloudflare 并添加 CNAME 记录到该 Worker），
    绑定后永久链接自动变成 `https://bva.estenova.top/?bv=...&p=...`。
 
-> GitHub 集成：在 Cloudflare 控制台用「Workers Builds」（或 Pages + Workers）
-> 连接本仓库，构建命令填 `cd src/worker && pnpm install && pnpm deploy`
-> （Cloudflare 构建环境自带 pnpm，仓库含 `pnpm-lock.yaml` 会自动识别），
-> 即可实现 push 后自动部署。
+### 方式一：Workers Builds 自动部署（免手写构建命令）
 
-### 方式三：GitHub Actions 自动部署（推荐，仓库已内置）
+Worker 配置已在**仓库根目录**，连接仓库后 Cloudflare 自动识别：
+
+- **Root directory（根目录）**：保持默认 `/`（wrangler.toml 在根目录，无需填 `src/worker`）
+- **Build command（构建命令）**：**留空**——Cloudflare 根据根目录 `pnpm-lock.yaml`
+  自动识别 pnpm 并安装依赖，随后按 `wrangler.toml` 自动部署
+- 若构建环境不识别 pnpm，再填 `pnpm install`（仅此一句，无需 deploy）
+
+### 方式二：GitHub Actions 自动部署（推荐，仓库已内置）
 
 仓库已包含 `.github/workflows/deploy.yml`，push 到 `main`/`master` 后自动
 `pnpm install` + `wrangler deploy`，不依赖 Cloudflare 构建环境。只需配置一次：

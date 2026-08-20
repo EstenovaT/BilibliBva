@@ -20,11 +20,9 @@ jobs:
           version: 11
 
       - name: Install worker deps (frozen lockfile)
-        working-directory: src/worker
         run: pnpm install --frozen-lockfile
 
       - name: Worker JS syntax check
-        working-directory: src/worker
         run: node --check index.js
 
       - name: Python syntax check (server + scripts)

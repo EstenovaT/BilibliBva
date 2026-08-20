@@ -31,15 +31,13 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: src/worker/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        working-directory: src/worker
         run: pnpm install --frozen-lockfile
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          workingDirectory: src/worker
           command: deploy
