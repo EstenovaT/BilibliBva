@@ -174,7 +174,9 @@ async function biliGet(urlStr) {
     const code = data.code;
     if (code === -412) {
       _lastApiError = "B站风控拦截(-412)：当前出口 IP 被 B 站限制" +
-        (_env && !_env.SESSDATA ? "（可配置 SESSDATA 登录 Cookie 绕过）" : "");
+        (_env && _env.SESSDATA
+          ? "（已配置 SESSDATA 但仍被拦：Cookie 可能无效/已过期，或该 IP 段被整体限制）"
+          : "（可配置 SESSDATA 登录 Cookie 尝试绕过）");
     }
     else if (code === -404) _lastApiError = "视频不存在或已被删除(-404)";
     else if (code === -403) _lastApiError = "访问被拒绝(-403)：可能需要登录或该视频不可见";

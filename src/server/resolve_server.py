@@ -42,6 +42,11 @@ PROXY_ENABLED = os.environ.get("BILI_PROXY", "0") == "1"
 # 永久解析链接域名（可配置；默认 bva.estenova.top，与 bot 插件保持一致）
 PERM_DOMAIN = os.environ.get("PERM_DOMAIN", "bva.estenova.top")
 
+# 可选：B 站登录 Cookie SESSDATA（环境变量 BILI_SESSDATA 传入）。
+# 携带登录态可降低 B 站风控(-412)概率；值为浏览器登录 bilibili.com 后
+# Cookies 里 SESSDATA 的值。请勿写入代码/仓库。
+SESSDATA = os.environ.get("BILI_SESSDATA", "").strip()
+
 # B 站官方 API 请求头（防盗链：必须带 bilibili 的 Referer）
 HEADERS = {
     "User-Agent": (
@@ -51,6 +56,8 @@ HEADERS = {
     "Referer": "https://www.bilibili.com",
     "Accept": "application/json, text/plain, */*",
 }
+if SESSDATA:
+    HEADERS["Cookie"] = "SESSDATA=" + SESSDATA
 
 QUALITY_MAP = {
     120: "4K", 116: "1080P60", 112: "1080P+", 80: "1080P",

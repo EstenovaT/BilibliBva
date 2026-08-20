@@ -49,6 +49,8 @@
            service: http://localhost:8080
          - service: http_status:404
 
+       （仓库已提供示例：deploy/tunnel/config.example.yml，复制后替换占位符即可）
+
   5. 绑定域名到隧道（DNS 记录，自动添加）：
        cloudflared tunnel route dns bva bva.estenova.top
 
@@ -56,10 +58,16 @@
        cd E:\project\aiagent\biliblivBva
        python src/script/start_local.py
        （服务跑在 127.0.0.1:8080，代理播放默认开启，无时长限制）
+       可选：设置 SESSDATA 登录 Cookie 进一步降低风控概率
+       （登录 bilibili.com 后从浏览器 Cookies 复制 SESSDATA 值）：
+         Windows:  set BILI_SESSDATA=你的值
+         Linux:    export BILI_SESSDATA=你的值
+       ⚠️ SESSDATA 是账号凭证，仅放环境变量，勿写入代码/仓库/泄露
 
   7. 启动隧道：
        cloudflared tunnel run bva
        看到 "Registered tunnel connection" 即成功
+       （仓库已提供 Windows 一键启动脚本：deploy/tunnel/start_tunnel.bat）
 
   8. 验证：
        浏览器访问 https://bva.estenova.top/
@@ -87,10 +95,16 @@
   ⚠️ 需要一台常开机器；网页、域名、API 行为与 Worker 版完全一致
   ⚠️ 流量走你的机器/服务器带宽，注意用量
 
+  说明：Cloudflare Worker 无法把出口 IP 改为国内（Cloudflare 中国网络
+  仅企业版开放且需 ICP 备案），所以"国内 IP 出站"只能由你的机器/服务器
+  完成，隧道仅负责把公网请求转发回来。
+
 七、备注
 ────────────────────────────────────────────────────────────
   - 若不想改域名，也可先访问隧道提供的临时域名体验
     （cloudflared tunnel --url http://localhost:8080，随机 *.trycloudflare.com）
   - 此方案与 Worker 版互不冲突：Worker 仍可保留（配 SESSDATA 后
     可能也能解析），两条路可同时在线，域名任选其一
+  - Worker 版代码中的 SESSDATA 登录功能保留（env.SESSDATA）；
+    Python 版对应环境变量为 BILI_SESSDATA
 ════════════════════════════════════════════════════════════

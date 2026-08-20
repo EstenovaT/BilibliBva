@@ -72,6 +72,13 @@ pnpm dev          # 等价于 pnpm exec wrangler dev，默认 http://localhost:8
 
 ## 部署到 Cloudflare
 
+> **推荐：Cloudflare Tunnel + 本地 Python 后端（国内 IP 出站，无 -412 风控）**
+> Cloudflare Worker 的出口 IP 是境外，调 B 站 API 会被风控（-412），且
+> 无法把出口 IP 改为国内。让 Python 后端在你国内机器运行、经 Cloudflare
+> Tunnel 对外提供服务，即可稳定解析、代理播放也无 30 秒限制。
+> 完整步骤：`docs/Cloudflare-Tunnel部署方案.txt`；
+> 现成文件：`deploy/tunnel/config.example.yml`、`deploy/tunnel/start_tunnel.bat`。
+
 ```bash
 pnpm login        # 或 pnpm exec wrangler login，授权 Cloudflare 账号
 pnpm deploy       # 部署 Worker，输出形如 https://bva-resolve.<你的子域>.workers.dev
@@ -128,6 +135,7 @@ curl "http://localhost:8787/api/resolve?url=BV1xx411c7mD&p=1&qn=80"
 | `HOST` | `0.0.0.0` | 监听地址 |
 | `BILI_PROXY` | `0` | `1` 时开启 `/proxy` 代理播放 |
 | `PERM_DOMAIN` | `bva.estenova.top` | 永久解析链接域名 |
+| `BILI_SESSDATA` | 空 | B 站登录 Cookie（SESSDATA），携带登录态降低风控概率 |
 | `BILI_INDEX` | `../webui/index.html` | 网页文件路径覆盖 |
 
 ## 环境变量（Worker 版，见 wrangler.toml）

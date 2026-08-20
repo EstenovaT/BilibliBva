@@ -1,0 +1,26 @@
+# Cloudflare Tunnel 配置示例 —— B站视频在线解析
+# 完整步骤见 docs/Cloudflare-Tunnel部署方案.txt
+#
+# 用法：
+#   1. cloudflared tunnel login                      # 授权账号
+#   2. cloudflared tunnel create bva                 # 创建隧道，记住输出的 Tunnel ID
+#   3. 把下面的占位符替换成你的值，保存到：
+#        Windows: C:\Users\<你的用户名>\.cloudflared\config.yml
+#        Linux:   /etc/cloudflared/config.yml 或 ~/.cloudflared/config.yml
+#   4. cloudflared tunnel route dns bva bva.estenova.top   # 域名绑定隧道
+#   5. 启动 Python 后端（国内 IP 出站，无 -412 风控）：
+#        cd E:\project\aiagent\biliblivBva
+#        python src/script/start_local.py             # 监听 127.0.0.1:8080
+#      （可选）设置 SESSDATA 登录 Cookie 进一步降风控：
+#        set BILI_SESSDATA=你的SESSDATA值
+#   6. 启动隧道：
+#        cloudflared tunnel run bva
+
+tunnel: 你的TunnelID-UUID
+credentials-file: C:\Users\你的用户名\.cloudflared\你的TunnelID-UUID.json
+
+ingress:
+  - hostname: bva.estenova.top
+    service: http://localhost:8080
+  # 兜底：未匹配的访问一律 404
+  - service: http_status:404
